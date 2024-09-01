@@ -4,24 +4,38 @@ const { Thought, User } = require('../../models');
 router.get('/', async (req, res) => {
   try {
     const users = await User.find()
-      .select('username email') // Select only the username and email fields
-      .populate('thoughts', '_id') // Populate thoughts, selecting only the content field
-      .populate('friends', 'username') // Populate friends, selecting only the username field
-      .lean(); // Converts the Mongoose document to a plain JavaScript object
-  
-    // Add friendCount to each user
-    const usersWithFriendCount = users.map(user => ({
+      .select('username email') 
+      .populate('thoughts', '_id') 
+      .populate('friends', '_id') 
+      .lean();
+
+    const friendCount = users.map(user => ({
       ...user,
-      friendCount: user.friends.length, // Count of friends
+      friendCount: user.friends.length,
     }));
 
-    res.json(usersWithFriendCount);
+    res.json(friendCount);
   } catch (err) {
     res.status(500).json(err);
   }
 });
 
-// POST a new user
+router.get('/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id)
+      .populate('thoughts')
+      .populate('friends');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 router.post('/', async (req, res) => {
   try {
     const user = await User.create(req.body);
