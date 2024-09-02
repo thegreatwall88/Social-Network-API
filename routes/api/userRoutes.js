@@ -36,6 +36,24 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+router.delete('/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    await Thought.deleteMany({ _id: { $in: user.thoughts } });
+
+    await User.findByIdAndDelete(req.params.id);
+
+    res.json({ message: 'User and associated thoughts deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 router.post('/', async (req, res) => {
   try {
     const user = await User.create(req.body);
@@ -45,7 +63,40 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Other routes for GET by ID, PUT, DELETE, etc.
+router.post('/:userId/friends/:friendId', async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.params.userId,
+      { $addToSet: { friends: req.params.friendId } }, 
+      { new: true }
+    );
 
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.delete('/:userId/friends/:friendId', async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.params.userId,
+      { $pull: { friends: req.params.friendId } },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 module.exports = router;
